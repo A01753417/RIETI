@@ -6,6 +6,8 @@ import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,10 +21,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.NearMe
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -36,6 +39,7 @@ import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -45,11 +49,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.launch
+import tec.spn.rieti.model.DeviceLocation
+import tec.spn.rieti.model.AgeRange
+import tec.spn.rieti.model.ChildrenCount
 import tec.spn.rieti.model.GeoPoint
 import tec.spn.rieti.model.ReportDraft
 import tec.spn.rieti.model.TimeOfDay
@@ -57,24 +64,51 @@ import tec.spn.rieti.model.WorkType
 
 private enum class TimeTarget { Start, End }
 
+/**
+ * Step 2 of the report flow: case details, location and emergency flag.
+ * Stateless: the draft and every change callback come from the ViewModel.
+ */
 @Composable
 fun DetailsStepScreen(
     draft: ReportDraft,
-    onChildrenCountChange: (String) -> Unit,
-    onChildrenAgesChange: (String) -> Unit,
+    onChildrenCountChange: (ChildrenCount) -> Unit,
+    onAgeRangeToggled: (AgeRange) -> Unit,
     onWorkTypeChange: (WorkType) -> Unit,
     onStartTimeChange: (TimeOfDay) -> Unit,
     onEndTimeChange: (TimeOfDay) -> Unit,
     onObservationsChange: (String) -> Unit,
     onAddressChange: (String) -> Unit,
-    onUseCurrentLocation: () -> Unit,
+    onLocationSelected: (GeoPoint, String?) -> Unit,
+    onOpenMapPicker: () -> Unit,
     onEmergencyChange: (Boolean) -> Unit,
     onNext: () -> Unit,
     onBack: () -> Unit,
     onDiscard: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Which time picker dialog is open (null = none). Enums are saveable.
     var pickingTime by rememberSaveable { mutableStateOf<TimeTarget?>(null) }
+
+    // "Usar mi ubicación actual": permission -> GPS fix -> reverse geocoding -> draft
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var locationMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    val locationRequester = rememberLocationRequester(
+        onLocation = { point ->
+            locationMessage = null
+            scope.launch {
+                onLocationSelected(point, DeviceLocation.reverseGeocode(context, point))
+            }
+        },
+        onFailure = { failure ->
+            locationMessage = when (failure) {
+                LocationFailure.PermissionDenied ->
+                    "Sin permiso de ubicación. Toca el mapa para elegir el punto manualmente."
+                LocationFailure.Unavailable ->
+                    "No pudimos obtener tu ubicación. Revisa que el GPS esté activo o elige el punto en el mapa."
+            }
+        }
+    )
 
     ReportStepScaffold(
         currentStep = 2,
@@ -101,24 +135,26 @@ fun DetailsStepScreen(
 
         Spacer(Modifier.height(16.dp))
         ReportFieldLabel("Número de niños")
-        ReportTextField(
-            value = draft.childrenCount,
-            onValueChange = onChildrenCountChange,
-            placeholder = "1",
-            errorMessage = draft.childrenCountError,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Next
-            )
+        ChoiceChips(
+            options = ChildrenCount.entries,
+            isSelected = { it == draft.childrenCount },
+            label = { it.label },
+            onClick = onChildrenCountChange
         )
 
         Spacer(Modifier.height(16.dp))
         ReportFieldLabel("Edades de los niños")
-        ReportTextField(
-            value = draft.childrenAges,
-            onValueChange = onChildrenAgesChange,
-            placeholder = "Ej. 12, 14, 16 años",
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+        Text(
+            text = "Puedes elegir más de un rango.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        ChoiceChips(
+            options = AgeRange.entries,
+            isSelected = { it in draft.childrenAges },
+            label = { it.label },
+            onClick = onAgeRangeToggled
         )
 
         Spacer(Modifier.height(16.dp))
@@ -153,6 +189,7 @@ fun DetailsStepScreen(
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
 
+        // ---------- Location ----------
         Spacer(Modifier.height(28.dp))
         Text(
             text = "Ubicación del caso",
@@ -161,16 +198,35 @@ fun DetailsStepScreen(
         )
 
         Spacer(Modifier.height(12.dp))
-        LocationPreview(location = draft.location)
+        LocationMapPreview(location = draft.location, onClick = onOpenMapPicker)
 
-        TextButton(onClick = onUseCurrentLocation) {
-            Icon(
-                imageVector = Icons.Outlined.NearMe,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
+        TextButton(
+            onClick = { locationRequester.request() },
+            enabled = !locationRequester.isLocating
+        ) {
+            if (locationRequester.isLocating) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Outlined.NearMe,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
             Spacer(Modifier.width(8.dp))
-            Text("Usar mi ubicación actual")
+            Text(
+                if (locationRequester.isLocating) "Obteniendo ubicación…" else "Usar mi ubicación actual"
+            )
+        }
+        locationMessage?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
         }
 
         Spacer(Modifier.height(8.dp))
@@ -185,6 +241,7 @@ fun DetailsStepScreen(
             )
         )
 
+        // ---------- Emergency ----------
         Spacer(Modifier.height(28.dp))
         Text(
             text = "Detalles adicionales",
@@ -219,6 +276,7 @@ fun DetailsStepScreen(
         Spacer(Modifier.height(16.dp))
     }
 
+    // Time picker dialogs live outside the scrolling content
     when (pickingTime) {
         TimeTarget.Start -> ReportTimePickerDialog(
             title = "Hora de inicio",
@@ -244,6 +302,33 @@ fun DetailsStepScreen(
     }
 }
 
+/**
+ * Row of selectable chips that wraps onto several lines. Used for both the single
+ * choice (children count) and the multiple choice (age ranges): what "selected"
+ * means is decided by the caller through [isSelected] and [onClick].
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun <T> ChoiceChips(
+    options: List<T>,
+    isSelected: (T) -> Boolean,
+    label: (T) -> String,
+    onClick: (T) -> Unit
+) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        options.forEach { option ->
+            FilterChip(
+                selected = isSelected(option),
+                onClick = { onClick(option) },
+                label = { Text(label(option)) }
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WorkTypeDropdown(
@@ -260,8 +345,9 @@ private fun WorkTypeDropdown(
             value = selected?.label ?: "",
             onValueChange = {},
             readOnly = true,
-            placeholder = "Seleccione un tipo de trabajo.",
+            placeholder = "Seleccione un tipo de trabajo...",
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            // On Material3 older than 1.3 use Modifier.menuAnchor() without arguments
             modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
         )
         ExposedDropdownMenu(
@@ -310,6 +396,7 @@ private fun TimeField(
     }
 }
 
+/** Material3 TimePicker inside a dialog (12-hour clock, like the prototype). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ReportTimePickerDialog(
@@ -357,44 +444,6 @@ private fun ReportTimePickerDialog(
 }
 
 @Composable
-private fun LocationPreview(location: GeoPoint?) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = ReportFieldBackground,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(160.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Outlined.Map,
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp)
-                )
-                Spacer(Modifier.height(8.dp))
-                if (location == null) {
-                    Text(
-                        text = "Aún no has seleccionado la ubicación",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                } else {
-                    Text(
-                        text = "Ubicación seleccionada",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "%.5f, %.5f".format(location.latitude, location.longitude),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun EmergencyWarning() {
     val context = LocalContext.current
 
@@ -413,11 +462,13 @@ private fun EmergencyWarning() {
                 color = MaterialTheme.colorScheme.error
             )
         }
+        // ACTION_DIAL only opens the dialer with the number typed in, no permission needed
         TextButton(
             onClick = {
                 try {
                     context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:911")))
                 } catch (e: ActivityNotFoundException) {
+                    // Device without a dialer app: nothing to do
                 }
             }
         ) {
@@ -432,20 +483,21 @@ private fun DetailsStepPreview() {
     MaterialTheme {
         DetailsStepScreen(
             draft = ReportDraft(
-                childrenCount = "2",
-                childrenAges = "12, 14 años",
+                childrenCount = ChildrenCount.TWO,
+                childrenAges = setOf(AgeRange.RANGE_6_11, AgeRange.RANGE_12_14),
                 workType = WorkType.VENTA_AMBULANTE,
                 isEmergency = true,
                 location = GeoPoint(19.2826, -99.6557)
             ),
             onChildrenCountChange = {},
-            onChildrenAgesChange = {},
+            onAgeRangeToggled = {},
             onWorkTypeChange = {},
             onStartTimeChange = {},
             onEndTimeChange = {},
             onObservationsChange = {},
             onAddressChange = {},
-            onUseCurrentLocation = {},
+            onLocationSelected = { _, _ -> },
+            onOpenMapPicker = {},
             onEmergencyChange = {},
             onNext = {},
             onBack = {},

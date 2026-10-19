@@ -3,23 +3,22 @@ package tec.spn.rieti.model
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * Repository responsible for fetching statistics data from API
+ * Repository responsible for fetching statistics data from the API.
  *
- * @param api The Retrofit [StatsApi] client used to perform network requests
+ * @property api API interface for retrieving statistics.
  */
 class StatsRepository(
     private val api: StatsApi = RetrofitClient.statsApi
 ) {
     /**
-     * Fetches system statistics asynchronously, handles exceptions and wraps the outcome in a [Result]
+     * Fetches overall statistics from the backend.
      *
-     * @return A [Result] containing [StatsResponse] on success, or an error/exception on failure
+     * @return A Result containing the StatsResponse if successful, or an exception if it fails.
      */
     suspend fun getStats(): Result<StatsResponse> =
         try {
             Result.success(api.getStats())
         } catch (e: CancellationException) {
-
             throw e
         } catch (e: Exception) {
             Result.failure(e)

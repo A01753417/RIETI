@@ -11,6 +11,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import tec.spn.rieti.navigation.ReportRoutes
+import tec.spn.rieti.navigation.reportFlowGraph
 
 object Routes {
     const val MAIN = "main"

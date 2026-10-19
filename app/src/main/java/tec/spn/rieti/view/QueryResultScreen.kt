@@ -372,7 +372,7 @@ private fun QueryResultFoundPreview() {
                 Report(
                     folio = "RIETI-ECA-2026-0005",
                     status = ReportStatus.EN_REVISION,
-                    //createdAt = "26 de agosto del 2026, 11:30 a. m."
+                    createdAt = "26 de agosto del 2026, 11:30 a. m."
                 )
             ),
             onBack = {},

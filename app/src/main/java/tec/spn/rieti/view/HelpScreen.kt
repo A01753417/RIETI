@@ -128,6 +128,11 @@ fun HelpScreen(
                 HorizontalDivider()
                 HelpStepItem(step = step)
             }
+            Spacer(Modifier.height(40.dp))
+            Text(
+                text = "Contacto:\n(722) 9342700 Ext. 82901 \nsepinna@edomex.gob.mx",
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

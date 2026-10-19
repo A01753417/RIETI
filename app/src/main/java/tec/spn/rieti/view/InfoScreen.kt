@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.WebAsset
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
@@ -85,8 +87,13 @@ private val infoElements = listOf(
         description = "Asesoría legal gratuita para familias afectadas y orientación sobre los derechos de los menores.",
         icon = Icons.Filled.Balance,
         link = "https://difem.edomex.gob.mx/representacipn-asistenciajuridica"
+    ),
+    InfoElement(
+        title = "Página EdoMex",
+        description = "Página web oficial de SIPINNA Estado de México",
+        icon = Icons.Filled.WebAsset,
+        link = "https://sipinna.edomex.gob.mx/"
     )
-
 )
 
 /**
@@ -126,19 +133,23 @@ fun InfoScreen(
         Column(
             modifier = Modifier
                 .padding(innerPadding)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "Servicios y recursos",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
             )
 
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "Información acerca de una gama de servicios para combatir el trabajo infantil",
-                style = MaterialTheme.typography.bodyMedium
+                text = "Información acerca de una gama de servicios para combatir el trabajo infantil y de información relacionada con SIPINNA",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
             )
 
             Spacer(Modifier.height(20.dp))
@@ -159,7 +170,12 @@ fun InfoScreen(
 private fun InfoElementItem(elem: InfoElement) {
     val context = LocalContext.current
 
-    Column(modifier = Modifier.padding(vertical = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Icon(
             imageVector = elem.icon,
             contentDescription = null,
@@ -168,13 +184,14 @@ private fun InfoElementItem(elem: InfoElement) {
         Text(
             text = elem.title,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(8.dp))
         Text(
             text = elem.description,
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(horizontal = 10.dp)
+            textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(12.dp))
         Surface(

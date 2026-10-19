@@ -33,7 +33,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tec.spn.rieti.model.ReportDraft
 
-
 @Composable
 fun ReporterStepScreen(
     draft: ReportDraft,
@@ -97,7 +96,7 @@ fun ReporterStepScreen(
 
         if (!draft.isAnonymous) {
             Spacer(Modifier.height(20.dp))
-            FieldLabel("Nombre completo")
+            ReportFieldLabel("Nombre completo")
             ReportTextField(
                 value = draft.name,
                 onValueChange = onNameChange,
@@ -110,7 +109,7 @@ fun ReporterStepScreen(
             )
 
             Spacer(Modifier.height(16.dp))
-            FieldLabel("Correo electrónico")
+            ReportFieldLabel("Correo electrónico")
             ReportTextField(
                 value = draft.email,
                 onValueChange = onEmailChange,
@@ -124,7 +123,7 @@ fun ReporterStepScreen(
             )
 
             Spacer(Modifier.height(16.dp))
-            FieldLabel("Teléfono de contacto")
+            ReportFieldLabel("Teléfono de contacto")
             Row(verticalAlignment = Alignment.Top) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
@@ -166,16 +165,6 @@ fun ReporterStepScreen(
         ConfidentialityCard()
         Spacer(Modifier.height(8.dp))
     }
-}
-
-@Composable
-private fun FieldLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
 }
 
 @Composable

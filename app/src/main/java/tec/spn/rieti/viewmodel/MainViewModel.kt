@@ -1,14 +1,15 @@
 package tec.spn.rieti.viewmodel
+
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Represents a single statistical metric item
+ * Represents a single statistical metric item.
  *
- * @property value The numerical or text value of the stat
- * @property label The description label for the stat
+ * @property value The numerical or text value of the stat.
+ * @property label The description label for the stat.
  */
 data class StatItem(
     val value: String,
@@ -16,16 +17,16 @@ data class StatItem(
 )
 
 /**
- * UI State holder for the main dashboard screen
+ * UI State holder for the main dashboard screen.
  *
- * @property stats List of statistical items to display on the main screen
+ * @property stats List of statistical items to display on the main screen.
  */
 data class MainUiState(
     val stats: List<StatItem> = emptyList()
 )
 
 /**
- * ViewModel responsible for managing and providing state to the main menu screen
+ * ViewModel responsible for managing and providing state to the main menu screen.
  */
 class MainViewModel : ViewModel() {
 
@@ -41,6 +42,6 @@ class MainViewModel : ViewModel() {
         )
     )
 
-    /** Flow to expose current dashboard UI state */
+    /** Flow to expose current dashboard UI state. */
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 }

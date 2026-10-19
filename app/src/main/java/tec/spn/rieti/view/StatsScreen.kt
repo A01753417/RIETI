@@ -151,7 +151,7 @@ fun StatsScreenContent(
                     Spacer(Modifier.height(24.dp))
                     StatBlock(
                         value = "%,d".format(uiState.minorsProtected),
-                        label = "Menores protegidos"
+                        label = "Reportes finalizados"
                     )
                 }
             }

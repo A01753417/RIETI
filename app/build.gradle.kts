@@ -52,6 +52,9 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.runtime.ktx)
+    implementation(libs.maplibre.compose)
+    runtimeOnly(libs.maplibre.compose.runtime)   // the native renderer: this is what's missing
+    implementation(libs.play.services.location)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

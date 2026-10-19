@@ -16,6 +16,10 @@ navigationRuntimeKtx = "2.10.2"
 retrofitVer = "3.0.0"
 gsonVer = "3.0.0"
 coil = "3.6.2"
+runtime = "1.12.1"
+
+maplibreCompose = "0.20.0"
+playServicesLocation = "21.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -43,6 +47,9 @@ gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref 
 coil = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
+maplibre-compose = { module = "org.maplibre.compose:maplibre-compose", version.ref = "maplibreCompose" }
+maplibre-compose-runtime = { module = "org.maplibre.compose:maplibre-compose-runtime-opengl-android", version.ref = "maplibreCompose" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

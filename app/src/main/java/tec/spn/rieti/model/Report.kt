@@ -63,6 +63,6 @@ enum class ReportStatus(
 data class Report(
     val folio: String,
     val status: ReportStatus,
-    //val createdAt: String
+    val createdAt: String
 )
 

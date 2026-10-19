@@ -30,6 +30,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,9 +60,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-
-// Colors shared by the report flow screens. Prefixed so they don't clash with the
-// private colors other files declare. Move them to your Theme when you consolidate.
 internal val ReportDark = Color(0xFF1B1B1B)
 internal val ReportTrack = Color(0xFFE3E3E8)
 internal val ReportFieldBackground = Color(0xFFF1F1F5)
@@ -70,13 +68,6 @@ internal val ReportInfoBorder = Color(0xFFCFE0F3)
 
 const val ReportFlowTotalSteps = 3
 
-/**
- * Top bar, progress bar, content and button
- *
- * @param onBack Back arrow action. null on the first step: back then asks the
- * user to confirm discarding the report
- * @param onDiscard Called after the user confirms discarding the report
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportStepScaffold(
@@ -89,11 +80,13 @@ fun ReportStepScaffold(
     totalSteps: Int = ReportFlowTotalSteps,
     primaryButtonEnabled: Boolean = true,
     primaryButtonIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowForward,
+    isBusy: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
 
     BackHandler(enabled = onBack == null) { showDiscardDialog = true }
+    BackHandler(enabled = isBusy) { }
 
     if (showDiscardDialog) {
         DiscardReportDialog(
@@ -123,7 +116,8 @@ fun ReportStepScaffold(
                         IconButton(
                             onClick = {
                                 if (onBack == null) showDiscardDialog = true else onBack()
-                            }
+                            },
+                            enabled = !isBusy
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -132,7 +126,7 @@ fun ReportStepScaffold(
                         }
                     },
                     actions = {
-                        IconButton(onClick = { showDiscardDialog = true }) {
+                        IconButton(onClick = { showDiscardDialog = true }, enabled = !isBusy) {
                             Icon(
                                 imageVector = Icons.Filled.Close,
                                 contentDescription = "Cerrar y descartar reporte"
@@ -155,7 +149,7 @@ fun ReportStepScaffold(
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Button(
-                        onClick = onPrimaryClick,
+                        onClick = { if (!isBusy) onPrimaryClick() },
                         enabled = primaryButtonEnabled,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -166,17 +160,25 @@ fun ReportStepScaffold(
                             .fillMaxWidth()
                             .height(48.dp)
                     ) {
-                        Text(
-                            text = primaryButtonText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Icon(
-                            imageVector = primaryButtonIcon,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        if (isBusy) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                        } else {
+                            Text(
+                                text = primaryButtonText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Icon(
+                                imageVector = primaryButtonIcon,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -236,7 +238,6 @@ fun DiscardReportDialog(
         }
     )
 }
-
 @Composable
 fun ReportTextField(
     value: String,
@@ -307,7 +308,7 @@ fun ReportRadioOption(
     ) {
         RadioButton(
             selected = selected,
-            onClick = null, // the whole row handles the click
+            onClick = null,
             colors = RadioButtonDefaults.colors(selectedColor = ReportDark)
         )
         Spacer(Modifier.width(12.dp))
